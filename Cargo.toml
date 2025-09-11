@@ -1,0 +1,12 @@
+[package]
+name = "voice_effects"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.99"
+cpal = "0.16.0"
+fundsp = "0.20.0"
+iced = { version = "0.13.1", features = ["advanced", "image"] }
+iced_wgpu = "0.13.5"
+tokio = { version = "1.47.1", features = ["time"] }
