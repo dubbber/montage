@@ -16,22 +16,22 @@ pub fn run_audio(settings: Arc<Mutex<AudioSettings>>, shutdown_signal: Arc<Atomi
         .default_output_device()
         .ok_or_else(|| anyhow!("No output device available"))?;
 
-    // Get initial settings
+    // get initial settings
     let initial_settings = {
         let settings_lock = settings.lock().unwrap();
         settings_lock.clone()
     };
 
-    let channels = 2; // Force stereo for better compatibility
+    let channels = 2; // force stereo for better compatibility
     let sample_rate = initial_settings.sample_rate.to_hz();
     let buffer_size = cpal::BufferSize::Fixed(initial_settings.buffer_size);
 
-    // Create DSP processor with pitch reference
+    // create DSP processor with pitch reference
     let pitch_ref = Arc::new(Mutex::new(initial_settings.pitch));
     let mut dsp = DspProcessor::new(pitch_ref.clone());
 
-    // Create delay buffer for output delay
-    let max_delay_samples = (sample_rate as f32 * 0.1) as usize; // Max 100ms delay
+    // create delay buffer for output delay
+    let max_delay_samples = (sample_rate as f32 * 0.1) as usize; // max 100ms delay
     let mut delay_buffer: VecDeque<f32> = VecDeque::with_capacity(max_delay_samples);
     
     let input_stream_config = cpal::StreamConfig {
@@ -46,14 +46,14 @@ pub fn run_audio(settings: Arc<Mutex<AudioSettings>>, shutdown_signal: Arc<Atomi
         eprintln!("Audio stream error: {}", err);
     };
 
-    // Channel for audio data
+    // channel for audio data
     let (tx, rx) = std::sync::mpsc::sync_channel::<Vec<f32>>(4);
 
-    // Input stream
+    // input stream
     let input_stream = input_device.build_input_stream(
         &input_stream_config,
         move |data: &[f32], _: &cpal::InputCallbackInfo| {
-            // Convert to mono signal
+            // convert to mono signal
             let mut buffer = Vec::with_capacity(data.len() / channels);
             for frame in data.chunks(channels) {
                 if !frame.is_empty() {
@@ -72,26 +72,26 @@ pub fn run_audio(settings: Arc<Mutex<AudioSettings>>, shutdown_signal: Arc<Atomi
         None,
     )?;
 
-    // Output stream with settings monitoring
+    // output stream with settings monitoring
     let settings_clone = settings.clone();
     let output_stream = output_device.build_output_stream(
         &output_stream_config,
         move |output: &mut [f32], _: &cpal::OutputCallbackInfo| {
-            // Update settings from GUI
+            // update settings from GUI
             let current_settings = {
                 if let Ok(settings_lock) = settings_clone.try_lock() {
                     let settings = settings_lock.clone();
-                    // Update pitch in DSP
+                    // update pitch in DSP
                     if let Ok(mut pitch_lock) = pitch_ref.try_lock() {
                         *pitch_lock = settings.pitch;
                     }
                     settings
                 } else {
-                    return; // Skip this buffer if we can't get settings
+                    return; // skip this buffer if we can't get settings
                 }
             };
 
-            // Calculate delay samples
+            // calculate delay samples
             let delay_samples = ((current_settings.delay_ms / 1000.0) * sample_rate as f32) as usize;
             let delay_samples = delay_samples.min(max_delay_samples);
 
@@ -102,23 +102,23 @@ pub fn run_audio(settings: Arc<Mutex<AudioSettings>>, shutdown_signal: Arc<Atomi
                         let mono_len = process_len / channels;
                         
                         if mono_len > 0 {
-                            // Process audio
+                            // process audio
                             let mut processed_buffer = vec![0.0f32; mono_len];
                             dsp.process(&input_buffer[..mono_len], &mut processed_buffer);
                             
-                            // Apply delay
+                            // apply delay
                             for (i, &sample) in processed_buffer.iter().enumerate() {
-                                // Add to delay buffer
+                                // add to delay buffer
                                 delay_buffer.push_back(sample);
                                 
-                                // Get delayed sample
+                                // get delayed sample
                                 let delayed_sample = if delay_buffer.len() > delay_samples {
                                     delay_buffer.pop_front().unwrap_or(0.0)
                                 } else {
-                                    0.0 // Silence during initial delay buildup
+                                    0.0 // silence during initial delay buildup
                                 };
                                 
-                                // Output to both channels
+                                // output to both channels
                                 if i * channels < output.len() {
                                     output[i * channels] = delayed_sample;
                                     if channels == 2 && i * channels + 1 < output.len() {
@@ -127,25 +127,25 @@ pub fn run_audio(settings: Arc<Mutex<AudioSettings>>, shutdown_signal: Arc<Atomi
                                 }
                             }
                             
-                            // Fill remaining with silence
+                            // fill remaining with silence
                             for sample in output[mono_len * channels..].iter_mut() {
                                 *sample = 0.0;
                             }
                         } else {
-                            // Fill with silence
+                            // fill with silence
                             for sample in output.iter_mut() {
                                 *sample = 0.0;
                             }
                         }
                     } else {
-                        // Fill with silence
+                        // fill with silence
                         for sample in output.iter_mut() {
                             *sample = 0.0;
                         }
                     }
                 },
                 Err(_) => {
-                    // No input data, output delayed samples or silence
+                    // no input data, output delayed samples or silence
                     for i in 0..(output.len() / channels) {
                         let delayed_sample = if delay_buffer.len() > delay_samples {
                             delay_buffer.pop_front().unwrap_or(0.0)
@@ -172,7 +172,7 @@ pub fn run_audio(settings: Arc<Mutex<AudioSettings>>, shutdown_signal: Arc<Atomi
 
     println!("Audio streams running with configurable settings...");
     
-    // Keep streams alive until shutdown signal is received
+    // keep streams alive until shutdown signal is received
     while !shutdown_signal.load(Ordering::Relaxed) {
         std::thread::sleep(std::time::Duration::from_millis(50));
     }

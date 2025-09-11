@@ -65,10 +65,10 @@ impl Default for AudioSettings {
     }
 }
 
-pub struct VoiceChangerApp {
+pub struct Montage {
     settings: AudioSettings,
     shared_settings: Arc<Mutex<AudioSettings>>,
-    buffer_size_slider: f32, // For slider (log scale)
+    buffer_size_slider: f32, // for slider (log scale)
     animation_time: f32,
     last_interaction: Instant,
     slider_animations: SliderAnimations,
@@ -97,7 +97,7 @@ impl Default for SliderAnimations {
     }
 }
 
-impl VoiceChangerApp {
+impl Montage {
     fn new(shared_settings: Arc<Mutex<AudioSettings>>) -> (Self, Task<Message>) {
         let initial_settings = match shared_settings.lock() {
             Ok(settings) => settings.clone(),
@@ -107,7 +107,7 @@ impl VoiceChangerApp {
             }
         };
         
-        // Convert buffer size to slider scale (log scale for better UX)
+        // convert buffer size to slider scale (log scale for better UX)
         let buffer_size_slider = (initial_settings.buffer_size as f32).log2();
         
         (
@@ -130,7 +130,7 @@ impl VoiceChangerApp {
             Message::PitchChanged(val) => {
                 self.settings.pitch = val;
                 self.last_interaction = Instant::now();
-                self.slider_animations.pitch_scale = 1.2; // Squishy effect
+                self.slider_animations.pitch_scale = 1.2; // squishy effect
                 self.slider_animations.pitch_glow = 1.0;
             }
             Message::SampleRateChanged(rate) => {
@@ -151,11 +151,11 @@ impl VoiceChangerApp {
                 self.slider_animations.delay_glow = 1.0;
             }
             Message::Tick(now) => {
-                // Update animation time
+                // update animation time
                 let _dt = now.duration_since(self.last_interaction).as_secs_f32();
                 self.animation_time += 0.016; // ~60fps
                 
-                // Animate slider scales back to normal (squishy effect)
+                // animate slider scales back to normal (squishy effect)
                 self.slider_animations.pitch_scale = 
                     1.0 + (self.slider_animations.pitch_scale - 1.0) * 0.85;
                 self.slider_animations.buffer_scale = 
@@ -163,7 +163,7 @@ impl VoiceChangerApp {
                 self.slider_animations.delay_scale = 
                     1.0 + (self.slider_animations.delay_scale - 1.0) * 0.85;
                 
-                // Fade out glow effects
+                // fade out glow effects
                 self.slider_animations.pitch_glow *= 0.95;
                 self.slider_animations.buffer_glow *= 0.95;
                 self.slider_animations.delay_glow *= 0.95;
@@ -189,12 +189,12 @@ impl VoiceChangerApp {
     }
 
     fn view(&self) -> Element<'_, Message, iced::Theme, Renderer> {
-        // Create animated, styled sliders with squishy effects
+        // animated, styled sliders with squishy effects
         let pitch_glow_intensity = self.slider_animations.pitch_glow;
         let buffer_glow_intensity = self.slider_animations.buffer_glow;
         let delay_glow_intensity = self.slider_animations.delay_glow;
 
-        // Pitch control with animation
+        // pitch control with animation
         let pitch_slider = Container::new(
             Slider::new(
                 0.5..=2.0,
@@ -227,7 +227,7 @@ impl VoiceChangerApp {
             section_style_with_scale(self.slider_animations.pitch_scale)
         });
 
-        // Sample rate control
+        // sample rate control
         let sample_rate_picker = PickList::new(
             &SampleRate::ALL[..],
             Some(self.settings.sample_rate),
@@ -260,7 +260,7 @@ impl VoiceChangerApp {
         .padding(20)
         .style(|_theme| section_style());
 
-        // Buffer size control with animation
+        // buffer size control with animation
         let buffer_size_slider = Container::new(
             Slider::new(
                 6.0..=11.0,
@@ -297,7 +297,7 @@ impl VoiceChangerApp {
             section_style_with_scale(self.slider_animations.buffer_scale)
         });
 
-        // Delay control with animation
+        // delay control with animation
         let delay_slider = Container::new(
             Slider::new(
                 0.0..=100.0,
@@ -330,7 +330,7 @@ impl VoiceChangerApp {
             section_style_with_scale(self.slider_animations.delay_scale)
         });
 
-        // Layout controls in a grid
+        // layout controls in a grid
         let left_column = Column::new()
             .spacing(25)
             .width(Length::Fill)
@@ -348,7 +348,7 @@ impl VoiceChangerApp {
             .push(left_column)
             .push(right_column);
 
-        // Floating animation effect (for future use)
+        // floating animation effect (for future use)
         let _float_offset = (self.animation_time * 2.0).sin() * 3.0;
 
         let background: Image = Image::new("assets/anime.jpeg")
@@ -397,7 +397,7 @@ impl VoiceChangerApp {
     }
 }
 
-// Custom styling functions
+// custom styling functions
 fn section_style() -> iced::widget::container::Style {
     iced::widget::container::Style {
         background: Some(Background::Color(Color::from_rgba(0.15, 0.2, 0.3, 0.8))),
@@ -417,7 +417,7 @@ fn section_style() -> iced::widget::container::Style {
 
 fn section_style_with_scale(scale: f32) -> iced::widget::container::Style {
     let mut style = section_style();
-    // Simulate scale effect with enhanced glow
+    // simulate scale effect with enhanced glow
     let glow_intensity = (scale - 1.0) * 5.0;
     style.border.color = Color::from_rgba(
         0.4 + glow_intensity * 0.3,
@@ -446,7 +446,7 @@ fn container_style_with_glow(glow: f32) -> iced::widget::container::Style {
     }
 }
 
-impl VoiceChangerApp {
+impl Montage {
     pub fn run(
         window_settings: iced::window::Settings,
         settings: Settings,
@@ -454,12 +454,12 @@ impl VoiceChangerApp {
     ) -> Result<()> {
         iced::application(
             "Voice Effects Control Panel",
-            VoiceChangerApp::update,
-            VoiceChangerApp::view,
+            Montage::update,
+            Montage::view,
         )
         .settings(settings)
         .window(window_settings)
-        .run_with(move || VoiceChangerApp::new(shared_settings))
+        .run_with(move || Montage::new(shared_settings))
         .map_err(|e| anyhow::anyhow!("GUI error: {}", e))
     }
 }
