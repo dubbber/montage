@@ -27,8 +27,8 @@ impl DspProcessor {
     pub fn new(pitch: Arc<Mutex<f32>>) -> Self {
         Self {
             pitch,
-            ring_buffer_a: vec![0.0; 2048], // smaller buffers for lower latency
-            ring_buffer_b: vec![0.0; 2048],
+            ring_buffer_a: vec![0.0; 128], // smaller buffers for lower latency
+            ring_buffer_b: vec![0.0; 128],
             write_index: 0,
             read_index_a: 0.0,
             read_index_b: 1024.0, // smaller offset for lower latency

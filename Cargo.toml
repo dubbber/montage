@@ -1,5 +1,5 @@
 [package]
-name = "voice_effects"
+name = "montage"
 version = "0.1.0"
 edition = "2024"
 

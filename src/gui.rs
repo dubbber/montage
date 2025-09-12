@@ -59,7 +59,7 @@ impl Default for AudioSettings {
         Self {
             pitch: 1.0,
             sample_rate: SampleRate::Rate44100,
-            buffer_size: 256,
+            buffer_size: 512,
             delay_ms: 0.0,
         }
     }
@@ -351,7 +351,7 @@ impl Montage {
         // floating animation effect (for future use)
         let _float_offset = (self.animation_time * 2.0).sin() * 3.0;
 
-        let background: Image = Image::new("assets/anime.jpeg")
+        let background: Image = Image::new("assets/anime.jpg")
             .width(Length::Fill)
             .height(Length::Fill);
 
